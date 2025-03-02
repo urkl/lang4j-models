@@ -10,13 +10,11 @@ public class AiSqlResponse {
 
     public String sql;
     public String gptSummary;
-    public String freemarker;
-    public String gptQuestion;
+     public String gptQuestion;
     public String title;
     public String prompt;
 
-    @Description("PRice of this api call in USD") // you can add an optional description to help an LLM have a better understanding
-
+    @Description("Add price  of this api call in USD")
     public double cost;
 
 }

@@ -45,7 +45,7 @@ public class ChatService {
         ChatLanguageModel chatModel = chatLanguageModelFactory.getModel(llmType);
 
 
-        AiSqlResponse aiSqlResponse;
+        AiSqlResponse aiSqlResponse=null;
         String output = null;
         try {
             ChatResponse response = chatModel.chat(messages);
@@ -65,7 +65,8 @@ public class ChatService {
         long durationMillis = stopWatch.getTime();
 
         // Dodaj odgovor modela v MessageList (vključi tip modela in trajanje)
-        String botText = String.format("(%s, %d ms): %s", llmType, durationMillis, output);
+        assert aiSqlResponse != null;
+        String botText = String.format("(%s, %d ms, %.8f USD): %s", llmType, durationMillis,aiSqlResponse.cost, output);
 
         return botText;
 
