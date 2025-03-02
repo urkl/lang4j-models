@@ -5,6 +5,7 @@ import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
 import dev.langchain4j.model.mistralai.MistralAiChatModel;
 import dev.langchain4j.model.mistralai.MistralAiChatModelName;
 import dev.langchain4j.model.openai.OpenAiChatModel;
+import dev.langchain4j.model.openai.OpenAiChatModelName;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,7 +19,7 @@ public class ModelsConfig {
             @Value("${langchain4j.open-ai.chat-model.model-name}") String modelName) {
         return OpenAiChatModel.builder()
                 .apiKey(apiKey)
-                .modelName(modelName)
+                .modelName(OpenAiChatModelName.valueOf(modelName))
                 .build();
     }
 

@@ -10,18 +10,13 @@ import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import dev.ai4j.openai4j.chat.Message;
-
-import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
-import dev.langchain4j.data.message.UserMessage;
-import dev.langchain4j.model.chat.ChatLanguageModel;
-import dev.langchain4j.model.chat.request.ChatRequest;
-import dev.langchain4j.model.chat.response.ChatResponse;
 import jakarta.annotation.PostConstruct;
-import net.urosk.llms.services.ChatLanguageModelFactory;
+import lombok.extern.slf4j.Slf4j;
+import net.urosk.llms.services.ChatService;
 import net.urosk.llms.services.LlmType;
 import org.apache.commons.lang3.time.StopWatch;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 
@@ -33,33 +28,33 @@ import java.util.List;
 
 @PageTitle("Chat Client")
 @Route("")
+@Slf4j
 public class ChatView extends VerticalLayout {
 
     private final MessageList messageList;
     private final TextArea inputField;
     private final Button sendButton;
     private final Button sendToAllButton;
-    private final ChatLanguageModelFactory chatLanguageModelFactory;
+
     List<MessageListItem> messages = new ArrayList<>();
     RadioButtonGroup<LlmType> llmTypeRadioGroup = new RadioButtonGroup<>();
     SystemMessage systemPrompt;
-    private ChatLanguageModel chatModel;
+    @Autowired
+    ChatService chatService;
     // Naložimo datoteko s sistemskim promptom iz resources
     @Value("classpath:system_prompt.txt")
     private Resource systemPromptResource;
 
-    public ChatView(ChatLanguageModelFactory chatLanguageModelFactory) {
-        this.chatLanguageModelFactory = chatLanguageModelFactory;
+    public ChatView() {
+
         setSizeFull();
         addClassName("chat-client-view");
+
 
         // RadioButtonGroup za izbiro modela
 
         llmTypeRadioGroup.setLabel("Izberi model jezika");
         llmTypeRadioGroup.setItems(LlmType.values());
-        llmTypeRadioGroup.addValueChangeListener(event -> {
-            chatModel = chatLanguageModelFactory.getModel(event.getValue());
-        });
         llmTypeRadioGroup.setValue(LlmType.OPENAI);
 
         // Ustvarimo MessageList za prikaz sporočil
@@ -90,6 +85,8 @@ public class ChatView extends VerticalLayout {
         setFlexGrow(1, messageList);
 
         messageList.setItems(messages);
+
+        inputField.setValue("Pripravi podatke o številu in vrednosti predmetov glede na odgovorno osebo, kjer je vnešena računovodska vrednost večja od 10 EUR.");
     }
 
     private void sendToAllMessage() {
@@ -112,15 +109,10 @@ public class ChatView extends VerticalLayout {
             StopWatch stopWatch = StopWatch.createStarted();
 
 
+            String out = chatService.sendMessage(type, userMessage, systemPrompt.text());
 
-            ChatResponse response = chatModel.chat( List.of(systemPrompt, UserMessage.from(userMessage)));
 
-            stopWatch.stop();
-            long durationMillis = stopWatch.getTime();
-
-            // Dodaj odgovor modela v MessageList (vključi tip modela in trajanje)
-            String botText = String.format("(%s, %d ms): %s", type.name(), durationMillis, response.aiMessage().text());
-            MessageListItem botItem = new MessageListItem(botText, Instant.now(), type.name());
+            MessageListItem botItem = new MessageListItem(out, Instant.now(), type.name());
 
             messages.add(botItem);
         }
@@ -135,7 +127,7 @@ public class ChatView extends VerticalLayout {
         if (userMessage == null || userMessage.trim().isEmpty()) {
             return;
         }
-        StopWatch stopWatch = StopWatch.createStarted();
+
         // Dodaj uporabniško sporočilo v MessageList
         MessageListItem userItem = new MessageListItem(userMessage, Instant.now(), "Uroš");
         messages.add(userItem);
@@ -144,16 +136,10 @@ public class ChatView extends VerticalLayout {
         // Počisti vnosno polje
         inputField.clear();
 
-        // Pošlji sporočilo izbranemu modelu in pridobi odgovor
+        String out = chatService.sendMessage(llmTypeRadioGroup.getValue(), userMessage, systemPrompt.text());
 
-        ChatResponse response = chatModel.chat( List.of(systemPrompt, UserMessage.from(userMessage)));
-        stopWatch.stop();
-        long durationMillis = stopWatch.getTime();
 
-        // Dodaj odgovor modela v MessageList (vključi tip modela in trajanje)
-        String botText = String.format("(%s, %d ms): %s", llmTypeRadioGroup.getValue().name(), durationMillis, response.aiMessage().text());
-        // Dodaj odgovor modela v MessageList
-        MessageListItem botItem = new MessageListItem(botText, Instant.now(), llmTypeRadioGroup.getValue().name());
+        MessageListItem botItem = new MessageListItem(out, Instant.now(), llmTypeRadioGroup.getValue().name());
 
 
         messages.add(botItem);
@@ -169,7 +155,7 @@ public class ChatView extends VerticalLayout {
             systemPrompt = SystemMessage.from(new String(systemPromptResource.getInputStream().readAllBytes(), StandardCharsets.UTF_8));
 
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Didn't find system prompt",e);
 
         }
     }
