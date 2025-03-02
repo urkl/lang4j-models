@@ -25,3 +25,6 @@ webpack.generated.js
 
 /src/main/bundles/
 /src/main/frontend/generated/
+    /saved-prompts/
+
+saved-prompts/

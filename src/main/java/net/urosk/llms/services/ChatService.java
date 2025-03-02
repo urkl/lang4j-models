@@ -1,6 +1,7 @@
 package net.urosk.llms.services;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
@@ -14,6 +15,9 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
+import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,11 +49,13 @@ public class ChatService {
         String output = null;
         try {
             ChatResponse response = chatModel.chat(messages);
-//            output = response.aiMessage().text();
+
 
             AiSqlResponseExtractor aiSqlResponseExtractor = AiServices.create(AiSqlResponseExtractor.class, chatModel);
             aiSqlResponse = aiSqlResponseExtractor.extract(response.aiMessage().text());
             output = aiSqlResponse.getSql();
+
+            saveToJsonFile(llmType,aiSqlResponse);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             output = "NAPAKA!  " + e.getMessage();
@@ -63,5 +69,19 @@ public class ChatService {
 
         return botText;
 
+    }
+    // Ustvari instanco ObjectMapper
+    ObjectMapper objectMapper = new ObjectMapper();
+
+    public void saveToJsonFile(LlmType llmType,AiSqlResponse aiSqlResponse) {
+
+
+// Predpostavimo, da je aiSqlResponse že inicializiran
+        try {
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(new File("saved-prompts/"+llmType.name()+"-"+Instant.now().toEpochMilli()+"-aiSqlResponse.json"), aiSqlResponse);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
