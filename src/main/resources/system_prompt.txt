@@ -10,6 +10,7 @@ VEDNO Vrni JSON s polji
 - chatgpt_question -- vprašanje, ki ga vrneš uporabniku, če ne razumeš vprašanja
 - chatgpt_summary -- kratek povzetek kaj je bil cilj tega queryja
 - title -- Safe filename za ime takega poročila, da ga lahko uporabnik shrani
+- cost -- cena za ta query
 
 
 Vedno odgovarjaj v Slovenščini!
