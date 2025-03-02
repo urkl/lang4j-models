@@ -1,159 +1,176 @@
 package net.urosk.llms.views.chat;
 
-import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.grid.GridVariant;
-import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.Image;
-import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.icon.Icon;
-import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.messages.MessageList;
+import com.vaadin.flow.component.messages.MessageListItem;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.router.AfterNavigationEvent;
-import com.vaadin.flow.router.AfterNavigationObserver;
-import com.vaadin.flow.router.Menu;
+import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
+import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import java.util.Arrays;
+import dev.ai4j.openai4j.chat.Message;
+
+import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.SystemMessage;
+import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.request.ChatRequest;
+import dev.langchain4j.model.chat.response.ChatResponse;
+import jakarta.annotation.PostConstruct;
+import net.urosk.llms.services.ChatLanguageModelFactory;
+import net.urosk.llms.services.LlmType;
+import org.apache.commons.lang3.time.StopWatch;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
-import org.vaadin.lineawesome.LineAwesomeIconUrl;
 
-@PageTitle("Chat")
+@PageTitle("Chat Client")
 @Route("")
-@Menu(order = 0, icon = LineAwesomeIconUrl.LIST_SOLID)
-public class ChatView extends Div implements AfterNavigationObserver {
+public class ChatView extends VerticalLayout {
 
-    Grid<Person> grid = new Grid<>();
+    private final MessageList messageList;
+    private final TextArea inputField;
+    private final Button sendButton;
+    private final Button sendToAllButton;
+    private final ChatLanguageModelFactory chatLanguageModelFactory;
+    List<MessageListItem> messages = new ArrayList<>();
+    RadioButtonGroup<LlmType> llmTypeRadioGroup = new RadioButtonGroup<>();
+    SystemMessage systemPrompt;
+    private ChatLanguageModel chatModel;
+    // Naložimo datoteko s sistemskim promptom iz resources
+    @Value("classpath:system_prompt.txt")
+    private Resource systemPromptResource;
 
-    public ChatView() {
-        addClassName("chat-view");
+    public ChatView(ChatLanguageModelFactory chatLanguageModelFactory) {
+        this.chatLanguageModelFactory = chatLanguageModelFactory;
         setSizeFull();
-        grid.setHeight("100%");
-        grid.addThemeVariants(GridVariant.LUMO_NO_BORDER, GridVariant.LUMO_NO_ROW_BORDERS);
-        grid.addComponentColumn(person -> createCard(person));
-        add(grid);
+        addClassName("chat-client-view");
+
+        // RadioButtonGroup za izbiro modela
+
+        llmTypeRadioGroup.setLabel("Izberi model jezika");
+        llmTypeRadioGroup.setItems(LlmType.values());
+        llmTypeRadioGroup.addValueChangeListener(event -> {
+            chatModel = chatLanguageModelFactory.getModel(event.getValue());
+        });
+        llmTypeRadioGroup.setValue(LlmType.OPENAI);
+
+        // Ustvarimo MessageList za prikaz sporočil
+        messageList = new MessageList();
+        messageList.setWidthFull();
+        messageList.getStyle().set("overflow-y", "auto");
+        messageList.getStyle().set("padding", "10px");
+
+        // Vnosno polje za sporočila
+        inputField = new TextArea();
+        inputField.setPlaceholder("Vnesite sporočilo...");
+        inputField.setWidthFull();
+        inputField.setHeight("100px");
+
+        // Gumb za pošiljanje sporočila posameznemu modelu
+        sendButton = new Button("Pošlji", event -> sendMessage());
+        sendButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+        // Gumb za pošiljanje sporočila vsem modelom
+        sendToAllButton = new Button("Pošlji vsem", event -> sendToAllMessage());
+        sendToAllButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+        HorizontalLayout inputLayout = new HorizontalLayout(inputField, sendButton, sendToAllButton);
+        inputLayout.setWidthFull();
+        inputLayout.setDefaultVerticalComponentAlignment(Alignment.END);
+
+        add(llmTypeRadioGroup, messageList, inputLayout);
+        setFlexGrow(1, messageList);
+
+        messageList.setItems(messages);
     }
 
-    private HorizontalLayout createCard(Person person) {
-        HorizontalLayout card = new HorizontalLayout();
-        card.addClassName("card");
-        card.setSpacing(false);
-        card.getThemeList().add("spacing-s");
+    private void sendToAllMessage() {
 
-        Image image = new Image();
-        image.setSrc(person.getImage());
-        VerticalLayout description = new VerticalLayout();
-        description.addClassName("description");
-        description.setSpacing(false);
-        description.setPadding(false);
 
-        HorizontalLayout header = new HorizontalLayout();
-        header.addClassName("header");
-        header.setSpacing(false);
-        header.getThemeList().add("spacing-s");
+        String userMessage = inputField.getValue();
+        if (userMessage == null || userMessage.trim().isEmpty()) {
+            return;
+        }
 
-        Span name = new Span(person.getName());
-        name.addClassName("name");
-        Span date = new Span(person.getDate());
-        date.addClassName("date");
-        header.add(name, date);
+        // Dodaj uporabniško sporočilo v MessageList
+        MessageListItem userItem = new MessageListItem(userMessage, Instant.now(), "Uroš");
+        messages.add(userItem);
 
-        Span post = new Span(person.getPost());
-        post.addClassName("post");
+        // Počisti vnosno polje
+        inputField.clear();
 
-        HorizontalLayout actions = new HorizontalLayout();
-        actions.addClassName("actions");
-        actions.setSpacing(false);
-        actions.getThemeList().add("spacing-s");
+        // Pošlji sporočilo vsem modelom in izmeri trajanje klica
+        for (LlmType type : LlmType.values()) {
+            StopWatch stopWatch = StopWatch.createStarted();
 
-        Icon likeIcon = VaadinIcon.HEART.create();
-        likeIcon.addClassName("icon");
-        Span likes = new Span(person.getLikes());
-        likes.addClassName("likes");
-        Icon commentIcon = VaadinIcon.COMMENT.create();
-        commentIcon.addClassName("icon");
-        Span comments = new Span(person.getComments());
-        comments.addClassName("comments");
-        Icon shareIcon = VaadinIcon.CONNECT.create();
-        shareIcon.addClassName("icon");
-        Span shares = new Span(person.getShares());
-        shares.addClassName("shares");
 
-        actions.add(likeIcon, likes, commentIcon, comments, shareIcon, shares);
 
-        description.add(header, post, actions);
-        card.add(image, description);
-        return card;
+            ChatResponse response = chatModel.chat( List.of(systemPrompt, UserMessage.from(userMessage)));
+
+            stopWatch.stop();
+            long durationMillis = stopWatch.getTime();
+
+            // Dodaj odgovor modela v MessageList (vključi tip modela in trajanje)
+            String botText = String.format("(%s, %d ms): %s", type.name(), durationMillis, response.aiMessage().text());
+            MessageListItem botItem = new MessageListItem(botText, Instant.now(), type.name());
+
+            messages.add(botItem);
+        }
+
+        // Dodaj sporočila v MessageList
+        messageList.setItems(messages);
+
     }
 
-    @Override
-    public void afterNavigation(AfterNavigationEvent event) {
+    private void sendMessage() {
+        String userMessage = inputField.getValue();
+        if (userMessage == null || userMessage.trim().isEmpty()) {
+            return;
+        }
+        StopWatch stopWatch = StopWatch.createStarted();
+        // Dodaj uporabniško sporočilo v MessageList
+        MessageListItem userItem = new MessageListItem(userMessage, Instant.now(), "Uroš");
+        messages.add(userItem);
 
-        // Set some data when this view is displayed.
-        List<Person> persons = Arrays.asList( //
-                createPerson("https://randomuser.me/api/portraits/men/42.jpg", "John Smith", "May 8",
-                        "In publishing and graphic design, Lorem ipsum is a placeholder text commonly used to demonstrate the visual form of a document without relying on meaningful content (also called greeking).",
-                        "1K", "500", "20"),
-                createPerson("https://randomuser.me/api/portraits/women/42.jpg", "Abagail Libbie", "May 3",
-                        "In publishing and graphic design, Lorem ipsum is a placeholder text commonly used to demonstrate the visual form of a document without relying on meaningful content (also called greeking).",
-                        "1K", "500", "20"),
-                createPerson("https://randomuser.me/api/portraits/men/24.jpg", "Alberto Raya", "May 3",
 
-                        "In publishing and graphic design, Lorem ipsum is a placeholder text commonly used to demonstrate the visual form of a document without relying on meaningful content (also called greeking).",
-                        "1K", "500", "20"),
-                createPerson("https://randomuser.me/api/portraits/women/24.jpg", "Emmy Elsner", "Apr 22",
+        // Počisti vnosno polje
+        inputField.clear();
 
-                        "In publishing and graphic design, Lorem ipsum is a placeholder text commonly used to demonstrate the visual form of a document without relying on meaningful content (also called greeking).",
-                        "1K", "500", "20"),
-                createPerson("https://randomuser.me/api/portraits/men/76.jpg", "Alf Huncoot", "Apr 21",
+        // Pošlji sporočilo izbranemu modelu in pridobi odgovor
 
-                        "In publishing and graphic design, Lorem ipsum is a placeholder text commonly used to demonstrate the visual form of a document without relying on meaningful content (also called greeking).",
-                        "1K", "500", "20"),
-                createPerson("https://randomuser.me/api/portraits/women/76.jpg", "Lidmila Vilensky", "Apr 17",
+        ChatResponse response = chatModel.chat( List.of(systemPrompt, UserMessage.from(userMessage)));
+        stopWatch.stop();
+        long durationMillis = stopWatch.getTime();
 
-                        "In publishing and graphic design, Lorem ipsum is a placeholder text commonly used to demonstrate the visual form of a document without relying on meaningful content (also called greeking).",
-                        "1K", "500", "20"),
-                createPerson("https://randomuser.me/api/portraits/men/94.jpg", "Jarrett Cawsey", "Apr 17",
-                        "In publishing and graphic design, Lorem ipsum is a placeholder text commonly used to demonstrate the visual form of a document without relying on meaningful content (also called greeking).",
-                        "1K", "500", "20"),
-                createPerson("https://randomuser.me/api/portraits/women/94.jpg", "Tania Perfilyeva", "Mar 8",
+        // Dodaj odgovor modela v MessageList (vključi tip modela in trajanje)
+        String botText = String.format("(%s, %d ms): %s", llmTypeRadioGroup.getValue().name(), durationMillis, response.aiMessage().text());
+        // Dodaj odgovor modela v MessageList
+        MessageListItem botItem = new MessageListItem(botText, Instant.now(), llmTypeRadioGroup.getValue().name());
 
-                        "In publishing and graphic design, Lorem ipsum is a placeholder text commonly used to demonstrate the visual form of a document without relying on meaningful content (also called greeking).",
-                        "1K", "500", "20"),
-                createPerson("https://randomuser.me/api/portraits/men/16.jpg", "Ivan Polo", "Mar 5",
 
-                        "In publishing and graphic design, Lorem ipsum is a placeholder text commonly used to demonstrate the visual form of a document without relying on meaningful content (also called greeking).",
-                        "1K", "500", "20"),
-                createPerson("https://randomuser.me/api/portraits/women/16.jpg", "Emelda Scandroot", "Mar 5",
+        messages.add(botItem);
 
-                        "In publishing and graphic design, Lorem ipsum is a placeholder text commonly used to demonstrate the visual form of a document without relying on meaningful content (also called greeking).",
-                        "1K", "500", "20"),
-                createPerson("https://randomuser.me/api/portraits/men/67.jpg", "Marcos Sá", "Mar 4",
+        messageList.setItems(messages);
 
-                        "In publishing and graphic design, Lorem ipsum is a placeholder text commonly used to demonstrate the visual form of a document without relying on meaningful content (also called greeking).",
-                        "1K", "500", "20"),
-                createPerson("https://randomuser.me/api/portraits/women/67.jpg", "Jacqueline Asong", "Mar 2",
-
-                        "In publishing and graphic design, Lorem ipsum is a placeholder text commonly used to demonstrate the visual form of a document without relying on meaningful content (also called greeking).",
-                        "1K", "500", "20")
-
-        );
-
-        grid.setItems(persons);
     }
 
-    private static Person createPerson(String image, String name, String date, String post, String likes,
-            String comments, String shares) {
-        Person p = new Person();
-        p.setImage(image);
-        p.setName(name);
-        p.setDate(date);
-        p.setPost(post);
-        p.setLikes(likes);
-        p.setComments(comments);
-        p.setShares(shares);
+    @PostConstruct
+    private void loadSystemPrompt() {
+        try {
 
-        return p;
+            systemPrompt = SystemMessage.from(new String(systemPromptResource.getInputStream().readAllBytes(), StandardCharsets.UTF_8));
+
+        } catch (IOException e) {
+            e.printStackTrace();
+
+        }
     }
-
 }

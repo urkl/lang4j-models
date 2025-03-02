@@ -1,0 +1,186 @@
+ Tole spodaj je moj podatkovni set na podlagi katerega mi boš pripravil SQL query za MariaDB.
+
+                1. jaz ti bom dal osnovni query, ki sem ti ga prilepil spodaj in ti boš na podlagi tega pripravil query, ki bo uporabniku omogočal pripravo statističnih poročil.
+                2. PODATKI SO ŽE DENORMALIZIRANI ZA ISKANJE!!!
+                3. ko iščeš uporabljaj like in UPPER na obeh straneh!
+                4. Na uporabnikovo vprašanje pripravi query. Iz njegovega vprašanja razberi kaj želi in pripravi query, ki bo uporabniku vrnil želene podatke Upoštevaj poimenovanja polj iz Aliasov. Torej če uporabnik reče Odgovorni kustos, je to polje skrbnik_zapisa
+                5. ČE si v dvomih, vprašaš uporabnika za nadaljnja navodila
+                6. Rezultat mi daš ločeno, query ki ga executam na bazi in freemarker kodo
+                7.
+                VEDNO Vrni JSON s polji
+                - SQL
+                - user_prompt
+                - chatgpt_question
+                - chatgpt_summary
+                - title
+
+                8. Če ne veš točno kaj bi naredil to vprašanje vrni uporabniku v json polje  chatgpt_question, ki ga bom pokazal uporabniku. Ostala polja  pusti prazna.
+                9. Na klientu bom preverjal, če je to polje polno ali prazno. Če bo polno, ti bo moral dati uporabnik dodatna navodila.
+                10.POZOR: vedno pripravi validen query saj ga direktno executam na bazi. BAza je MARIADB. Pazi na sintakso! Maria db nima funkcije DATE_SUB
+                11. Kot rezultat querija mi daj polja in NE ALIASE!!
+                12. Če ne razumeš dobro vprašanja in ne znaš pripraviti query-ja, potem obvezno napiši v chatgpt_question kaj bi uporabniku vprašal.
+                13. Vedno odgovarjaj v Slovenščini!
+                14. V polje chatgpt_summary mi daj kratek povzetek kaj je bil cilj tega queryja, po tvojih strokovnih besedah nekega kustosa. V smislu Pripravil sem poročilo ...
+                15. PRi nekaterih poljih imaš za komentarjom še razlago --
+                16. Pomembno Ko pripraviš rezultat VEDNO uporabi alias polja, ki sem ti ga podal! Polje lahko zaenkrat dodaš v oklepaju! !!
+                17.  V polje title dodaj Safe filename za ime takega poročila, da ga lahko uporabnik shrani
+                18. ko iščeš po poljih vedno uporabi UPPER(POLJA) LIKE (UPPER(povpraševanje)
+
+                QUERY:
+
+
+                SELECT solastnistvo                 'Solastništvo',
+                                                                                       aion_connection_location_id  'aion_connection_location_id',
+                                                                                       status_avtorske_pravice      'status_avtorske_pravice',
+                                                                                       DATUM_PREVZEMA_DEPO_MESEC    'Datum prevzema (mesec)',
+                                                                                       DATUM_PREVZEMA_DEPO_DAN      'Datum prevzema (dan)',
+                                                                                       DATUM_INVENTARIZACIJE_MESEC  'Datum inventarizacije (mesec)',
+                                                                                       DATUM_INVENTARIZACIJE_DAN    'Datum inventarizacije (dan)',
+                                                                                       DATUM_AKVIZICIJE_MESEC       'Datum akvizicije (mesec)',
+                                                                                       DATUM_AKVIZICIJE_DAN         'Datum akvizicije (dan)',
+                                                                                       DATUM_PRIDOBITVE_MESEC       'Datum pridobitve (mesec)',
+                                                                                       DATUM_PRIDOBITVE_DAN         'Datum pridobitve (dan)',
+                                                                                       DATUM_EVIDENCE_MESEC         'Datum evidence (mesec)',
+                                                                                       DATUM_EVIDENCE_DAN           'Datum evidence (dan)',
+                                                                                       DATUM_ODKRITJA_MESEC         'Datum odkritja (mesec)',
+                                                                                       DATUM_ODKRITJA_DAN           'Datum odkritja (dan)',
+                                                                                       DATUM_VREDNOTENJA_MESEC      'Datum vrednotenja (mesec)',
+                                                                                       DATUM_VREDNOTENJA_DAN        'Datum vrednotenja (dan)',
+                                                                                       id_predmet_ref               'id_predmet_ref',
+                                                                                       STEVILKA_PREDMETA            'Številka predmeta*',
+                                                                                       vrsta_predmeta               'Status predmeta',  -- možne vrednosti so MUZEALIJA, MUZEJSKI PREDMET, VZOREC, DRUGI PREDMET, EVIDENTIRANO GRADIVO,  ODPISANO GRADIVO
+                                                                                       skrbnik_zapisa               'Odgovorni kustos',
+                                                                                       trenutna_lokacija            'Lokacija / obdelava',
+                                                                                       trenutna_lokacija_identifier 'Opis trenutne lokacije / obdelave',
+                                                                                       id                           'Id',
+                                                                                       STARA_STV                    'Stara številka',
+                                                                                       PREDMET_STV                  'Začasna številka',
+                                                                                       REF_AVTORSKA_PRAVICA         'Avtorske pravice',
+                                                                                       ZVRST_DEDISCINE              'Zvrst dediščine',
+                                                                                       MUZEO_KONTEKST               'Muzeološki kontekst',
+                                                                                       PREDM_KONTEKST               'Predmetni kontekst',
+                                                                                       OSNOVNA_KLASIFIKACIJA        'Osnovna klasifikacija',
+                                                                                       REF_MUZEJSKA_ZBIRKA          'Muzejska zbirka',
+                                                                                       IME_PREDMETA                 'Ime predmeta*',
+                                                                                       NASLOV                       'Naslov*',
+                                                                                       NASLOV_ENG                   'Angleški naslov',
+                                                                                       SKUPINA_PREDMETOV            'Skupina predmetov',
+                                                                                       REP_REF_AVTOR                'Avtorji*',
+                                                                                       OPIS_PREDMETA                'Opis predmeta',
+                                                                                       HRBTNA_STRAN                 'Hrbtna stran',
+                                                                                       OPOMBA                       'Opomba',
+                                                                                       IZVOR_PREDMETA               'Izvor predmeta*',
+                                                                                       SIGNATURA_DATACIJA           'Signatura predmeta',
+                                                                                       DELAVNICA                    'Delavnica / proizvajalec',
+                                                                                       REF_NAROCNIK                 'Naročnik',
+                                                                                       ZNAK_IZDELAVE                'Napisi / Oznake*',
+                                                                                       PROVENIENCA                  'Provenienca',
+                                                                                       DATACIJA                     'Datacija*',
+                                                                                       LETO_NASTANKA_OD             'Leto nastanka od',
+                                                                                       LETO_NASTANKA_DO             'Leto nastanka do',
+                                                                                       OBDOBJE                      'Obdobje',
+                                                                                       CAS_UPORABE                  'Čas uporabe*',
+                                                                                       TEHNO_SKUPINA                'Tehnika izdelave*',
+                                                                                       SLOG                         'Slog, stil',
+                                                                                       MOTIV_OKRASA                 'Motiv okrasa ',
+                                                                                       OBLIKO_SKUPINA               'Oblikovna skupina',
+                                                                                       TEHNIKA_OKRASA               'Tehnika okrasa',
+                                                                                       MATERIAL                     'Snov',
+                                                                                       VRSTA_MATERIALA              'Opis snovi',
+                                                                                       MERE_PREDMETA                'Mere predmeta*',
+                                                                                       TEZA                         'Teža - masa',
+                                                                                       STEVILO                      'Število predmetov',
+                                                                                       STANJE                       'Stanje predmeta',
+                                                                                       OHRANJENOST                  'Ohranjenost',
+                                                                                       REF_VREDNOTIL                'Vrednotil',
+                                                                                       CENA                         'Računovodska vrednost',
+                                                                                       VALUTA_CENA                  'Računovodska vrednost - valuta',
+                                                                                       TRZNA_VREDNOST               'Tržna vrednost',
+                                                                                       TRZNA_VREDNOST_VALUTA        'Tržna vrednost - valuta',
+                                                                                       VREDNOST                     'Muzejska vrednost',
+                                                                                       VALUTA_VREDNOST              'Muzejska vrednost - valuta',
+                                                                                       REF_LASTNIK                  'Lastnik*',
+                                                                                       REF_LASTNIK_ZADNJI           'Zadnji lastnik',
+                                                                                       HRAMBA                       'Hramba',
+                                                                                       NACIN_ODKRITJA               'Način odkritja',
+                                                                                       VRSTA_ODKRITJA               'Vrsta odkritja',
+                                                                                       KOORDINATE_GK                'Koordinate G-K',
+                                                                                       POGOJI_ODKRITJE              'Posebni pogoji',
+                                                                                       REF_LOKACIJA                 'Najdišče, lokacija*',
+                                                                                       REF_NAJDITELJ                'Najditelj',
+                                                                                       ZG_PREDMETA                  'Zgodovina predmeta*',
+                                                                                       OBDELAVA                     'Obdelava',
+                                                                                       DISTRIBUCIJA                 'Distribucija',
+                                                                                       POSEBNA_NAJDBA               'Posebna najdba',
+                                                                                       REF_IZKOPAVANJE              'Koda SE',
+                                                                                       TERENSKA_SE                  'Stratigrafska enota',
+                                                                                       SEKTOR_KVADRANT              'Sektor / kvadrant',
+                                                                                       SE_OPOMBA                    'SE opomba',
+                                                                                       KOORDINATE                   'Koordinate',
+                                                                                       RELATIVNA_VISINA             'Relativna višina (m) ',
+                                                                                       GLOBINA                      'Globina (cm)',
+                                                                                       ABSOLUTNA_VISINA             'Absolutna višina (m)',
+                                                                                       ID_GRADIVA_EVG               'Številka evidentiranega gradiva',
+                                                                                       REF_EVIDENCA                 'Koda evidence',
+                                                                                       REF_EVIDENTIRAL              'Evidentiral',
+                                                                                       SIGNATURA                    'Identifikacijska številka',
+                                                                                       REF_PREDLOG_PRIDOBITEV       'Predlog za pridobitev',
+                                                                                       NACIN_PRIDOBITVE             'Način pridobitve',
+                                                                                       PREDLOG_UTEMELJITEV          'Utemeljitev predloga',
+                                                                                       ID_GRADIVA_PRG               'Številka pridobljenega gradiva',
+                                                                                       REF_PRIDOBIVANJE             'Koda pridobitve',
+                                                                                       REF_PRIDOBIL                 'Pridobil',
+                                                                                       IDENTIFIKACIJA               'Koda gradiva',
+                                                                                       VRSTA_PRIDOBITVE             'Vrsta pridobitve',
+                                                                                       AKCESIJSKA_STV               'Identifikacija predmeta (akcesijska številka)',
+                                                                                       REF_AKVIZIRAL                'Akviziral',
+                                                                                       INVENTARNA_STV               'Inventarna številka*',
+                                                                                       REF_INVENTARIZIRAL           'Inventariziral*',
+                                                                                       REP_REF_AVTOR_IZVIRNIKA      'Avtor izvirnika',
+                                                                                       DELAVNICA_IZVIRNIKA          'Delavnica izvirnika / Proizvajalec',
+                                                                                       NASLOV_IZVIRNIKA             'Naslov izvirnika',
+                                                                                       IZVOR_IZVIRNIKA              'Izvor, poreklo izvirnika',
+                                                                                       IME_IZVIRNIKA                'Ime izvirnika (predmeta)',
+                                                                                       SIGNATURA_IZVIRNIKA          'Napisi / Oznake izvirnika',
+                                                                                       HRAMBA_IZVIRNIKA             'Hramba izvirnika',
+                                                                                       MATERIAL_IZVIRNIKA           'Material izvirnika',
+                                                                                       OPIS_IZVIRNIKA               'Opis izvirnika',
+                                                                                       NAMEN                        'Namen vzorca',
+                                                                                       ID_VZORCA                    'Identifikacija vzorca',
+                                                                                       VZOREC_STV                   'Številka vzorca',
+                                                                                       STANJE_VZORCA                'Stanje vzorca',
+                                                                                       REF_DEPOJIST                 'Depojist',
+                                                                                       KODA_LOKACIJE                'Koda lokacije predmeta',
+                                                                                       MAKROLOKACIJA                'Makrolokacija',
+                                                                                       uuid                         'Uuid',
+                                                                                       id_user_owner                'Id user owner',
+                                                                                       id_user_created              'Id user created',
+                                                                                       id_user_last_changed         'Id user last changed',
+                                                                                       date_inserted                'Datum vnosa',
+                                                                                       date_changed                 'Datum spremembe',
+                                                                                       counter                      'Counter',
+                                                                                       has_content                  'Ima datoteko(e)',
+                                                                                       NAROCNIK                     'Naročnik (Pomembne osebe)',
+                                                                                       KONTEKST                     'Kontekst',
+                                                                                       UTEMELJITEV                  'Utemeljitev',
+                                                                                       VRSTA_GRADIVA                'Vrsta gradiva',
+                                                                                       OPREMA_PREDMETA              'Oprema predmeta',
+                                                                                       vnesel                       'Vnesel',
+                                                                                       REF_KONTAKTNA_OSEBA          'Kontaktna oseba',
+                                                                                       REF_USTANOVA_ODKRITJE        'Ustanova odkritje',
+                                                                                       DATUM_VREDNOTENJA_LETO       'Datum vrednotenja (leto)',
+                                                                                       DATUM_ODKRITJA_LETO          'Datum odkritja (leto)',
+                                                                                       DATUM_EVIDENCE_LETO          'Datum evidence (leto)',
+                                                                                       DATUM_PRIDOBITVE_LETO        'Datum pridobitve (leto)',
+                                                                                       DATUM_AKVIZICIJE_LETO        'Datum akvizicije (leto)',
+                                                                                       DATUM_INVENTARIZACIJE_LETO   'Datum inventarizacije (leto)',
+                                                                                       DATUM_PREVZEMA_DEPO_LETO     'Datum prevzema (leto)',
+                                                                                       default_file                 'Default file',
+                                                                                       STABILNOST                   'Stabilnost',
+                                                                                       ZADNJI_PREGLED               'Zadnji pregled',
+                                                                                       NASLEDNJI_PREGLED            'Naslednji pregled',
+                                                                                       spremenil                    'Spremenil'
+                                                                                FROM _bi_predmet
+
+
+                Pri končnem queriju za FIELD NAME uporabi ALIAS polja, ker ga prikažem direktno uporabniku!
