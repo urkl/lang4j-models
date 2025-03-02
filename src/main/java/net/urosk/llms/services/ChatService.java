@@ -6,7 +6,10 @@ import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
+import dev.langchain4j.service.AiServices;
 import lombok.extern.slf4j.Slf4j;
+import net.urosk.llms.AiSqlResponse;
+import net.urosk.llms.AiSqlResponseExtractor;
 import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,18 +29,27 @@ public class ChatService {
         if (userMessage == null || userMessage.trim().isEmpty()) {
             return "Vnesite sporočilo!";
         }
+
+
         StopWatch stopWatch = StopWatch.createStarted();
 
         List<ChatMessage> messages = new ArrayList<>();
-        messages.add(new UserMessage(userMessage));
         messages.add(new SystemMessage(systemPrompt));
+        messages.add(new UserMessage(userMessage));
+
 
         ChatLanguageModel chatModel = chatLanguageModelFactory.getModel(llmType);
 
-        String output = "";
+
+        AiSqlResponse aiSqlResponse;
+        String output = null;
         try {
             ChatResponse response = chatModel.chat(messages);
-            output = response.aiMessage().text();
+//            output = response.aiMessage().text();
+
+            AiSqlResponseExtractor aiSqlResponseExtractor = AiServices.create(AiSqlResponseExtractor.class, chatModel);
+            aiSqlResponse = aiSqlResponseExtractor.extract(response.aiMessage().text());
+            output = aiSqlResponse.getSql();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             output = "NAPAKA!  " + e.getMessage();

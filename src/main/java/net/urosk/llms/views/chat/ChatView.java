@@ -1,5 +1,6 @@
 package net.urosk.llms.views.chat;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.messages.MessageList;
@@ -15,7 +16,6 @@ import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import net.urosk.llms.services.ChatService;
 import net.urosk.llms.services.LlmType;
-import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @PageTitle("Chat Client")
 @Route("")
@@ -101,24 +102,34 @@ public class ChatView extends VerticalLayout {
         MessageListItem userItem = new MessageListItem(userMessage, Instant.now(), "Uroš");
         messages.add(userItem);
 
-        // Počisti vnosno polje
-        inputField.clear();
-
+        UI ui = UI.getCurrent();
         // Pošlji sporočilo vsem modelom in izmeri trajanje klica
         for (LlmType type : LlmType.values()) {
-            StopWatch stopWatch = StopWatch.createStarted();
+
+            MessageListItem waitingItem = new MessageListItem("Čakam odgovor od " + type.name() + "...", Instant.now(), type.name());
+            waitingItem.setUserColorIndex(1);
+            messages.add(waitingItem);
+            messageList.setItems(messages);
+
+            CompletableFuture.supplyAsync(()->{
+                String out = chatService.sendMessage(type, userMessage, systemPrompt.text());
+                return out;
+            }).thenAcceptAsync(result -> {
+
+                ui.access(()->{
+                    MessageListItem botItem = new MessageListItem(result, Instant.now(), type.name());
+                    messages.remove(waitingItem);
+                    messages.add(botItem);
+                    messageList.setItems(messages);
+                });
+
+            });
 
 
-            String out = chatService.sendMessage(type, userMessage, systemPrompt.text());
-
-
-            MessageListItem botItem = new MessageListItem(out, Instant.now(), type.name());
-
-            messages.add(botItem);
         }
 
         // Dodaj sporočila v MessageList
-        messageList.setItems(messages);
+
 
     }
 
@@ -155,7 +166,7 @@ public class ChatView extends VerticalLayout {
             systemPrompt = SystemMessage.from(new String(systemPromptResource.getInputStream().readAllBytes(), StandardCharsets.UTF_8));
 
         } catch (IOException e) {
-            log.error("Didn't find system prompt",e);
+            log.error("Didn't find system prompt", e);
 
         }
     }

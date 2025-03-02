@@ -1,9 +1,11 @@
 package net.urosk.llms.configurations;
 
 import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.request.ResponseFormat;
 import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
 import dev.langchain4j.model.mistralai.MistralAiChatModel;
 import dev.langchain4j.model.mistralai.MistralAiChatModelName;
+import dev.langchain4j.model.mistralai.internal.api.MistralAiResponseFormatType;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModelName;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +22,9 @@ public class ModelsConfig {
         return OpenAiChatModel.builder()
                 .apiKey(apiKey)
                 .modelName(OpenAiChatModelName.valueOf(modelName))
+                .logRequests(true)
+                .logResponses(true)
+                .responseFormat("json")
                 .build();
     }
 
@@ -30,6 +35,8 @@ public class ModelsConfig {
         return GoogleAiGeminiChatModel.builder()
                 .apiKey(apiKey)
                 .modelName(modelName)
+                .logRequestsAndResponses(true)
+                .responseFormat(ResponseFormat.JSON)
                 .build();
     }
 
@@ -41,6 +48,9 @@ public class ModelsConfig {
         return MistralAiChatModel.builder()
                 .apiKey(apiKey)
                 .modelName(MistralAiChatModelName.valueOf(modelName))
+                .logRequests(true)
+                .logResponses(true)
+                .responseFormat(MistralAiResponseFormatType.JSON_OBJECT)
                 .build();
     }
 
@@ -54,6 +64,9 @@ public class ModelsConfig {
                 .apiKey(apiKey)
                 .modelName(modelName)
                 .baseUrl(baseUrl)
+                .logRequests(true)
+                .logResponses(true)
+                .responseFormat("json")
                 .build();
     }
 }

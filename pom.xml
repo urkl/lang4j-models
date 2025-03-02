@@ -63,7 +63,15 @@
             <artifactId>lombok</artifactId>
             <version>1.18.32</version>
             <scope>provided</scope>
+
         </dependency>
+        <!-- https://mvnrepository.com/artifact/dev.langchain4j/langchain4j-core -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j</artifactId>
+            <version>1.0.0-beta1</version>
+        </dependency>
+
         <!-- LangChain4j: OpenAI integration (Spring Boot starter) -->
         <dependency>
             <groupId>dev.langchain4j</groupId>
