@@ -26,17 +26,12 @@ public class ChatLanguageModelFactory {
     }
 
     public ChatLanguageModel getModel(LlmType type) {
-        switch (type) {
-            case OPENAI:
-                return openAiModel;
-            case GEMINI:
-                return geminiModel;
-            case MISTRAL:
-                return mistralModel;
-            case PERPLEXITY:
-                return perplexityModel;
-            default:
-                throw new IllegalArgumentException("Neveljaven tip LLM: " + type);
-        }
+        return switch (type) {
+            case OPENAI -> openAiModel;
+            case GEMINI -> geminiModel;
+            case MISTRAL -> mistralModel;
+            case PERPLEXITY -> perplexityModel;
+            default -> throw new IllegalArgumentException("Neveljaven tip LLM: " + type);
+        };
     }
 }

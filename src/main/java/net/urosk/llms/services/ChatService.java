@@ -25,6 +25,8 @@ import java.util.List;
 @Slf4j
 public class ChatService {
 
+    // Ustvari instanco ObjectMapper
+    ObjectMapper objectMapper = new ObjectMapper();
     @Autowired
     private ChatLanguageModelFactory chatLanguageModelFactory;
 
@@ -45,7 +47,7 @@ public class ChatService {
         ChatLanguageModel chatModel = chatLanguageModelFactory.getModel(llmType);
 
 
-        AiSqlResponse aiSqlResponse=null;
+        AiSqlResponse aiSqlResponse = null;
         String output = null;
         try {
             ChatResponse response = chatModel.chat(messages);
@@ -55,7 +57,7 @@ public class ChatService {
             aiSqlResponse = aiSqlResponseExtractor.extract(response.aiMessage().text());
             output = aiSqlResponse.getSql();
 
-            saveToJsonFile(llmType,aiSqlResponse);
+            saveToJsonFile(llmType, aiSqlResponse);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             output = "NAPAKA!  " + e.getMessage();
@@ -66,20 +68,18 @@ public class ChatService {
 
         // Dodaj odgovor modela v MessageList (vključi tip modela in trajanje)
         assert aiSqlResponse != null;
-        String botText = String.format("(%s, %d ms, %.8f USD): %s", llmType, durationMillis,aiSqlResponse.cost, output);
+        String botText = String.format("(%s, %d ms, %.8f USD): %s", llmType, durationMillis, aiSqlResponse.cost, output);
 
         return botText;
 
     }
-    // Ustvari instanco ObjectMapper
-    ObjectMapper objectMapper = new ObjectMapper();
 
-    public void saveToJsonFile(LlmType llmType,AiSqlResponse aiSqlResponse) {
+    public void saveToJsonFile(LlmType llmType, AiSqlResponse aiSqlResponse) {
 
 
 // Predpostavimo, da je aiSqlResponse že inicializiran
         try {
-            objectMapper.writerWithDefaultPrettyPrinter().writeValue(new File("saved-prompts/"+llmType.name()+"-"+Instant.now().toEpochMilli()+"-aiSqlResponse.json"), aiSqlResponse);
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(new File("saved-prompts/" + llmType.name() + "-" + Instant.now().toEpochMilli() + "-aiSqlResponse.json"), aiSqlResponse);
 
         } catch (IOException e) {
             e.printStackTrace();
